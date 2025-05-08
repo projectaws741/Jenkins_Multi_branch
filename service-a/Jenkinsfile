@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    // Build Docker Image
+                    def imageName = "service-a"
+                    docker.build(imageName)
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    // Here you can add any testing commands
+                    echo 'Running tests...'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Deploy the container
+                    def imageName = "service-a"
+                    docker.image(imageName).withRun('-p 5000:5000') { c ->
+                        sh 'sleep 15' // Wait for the container to start
+                    }
+                }
+            }
+        }
+    }
+}

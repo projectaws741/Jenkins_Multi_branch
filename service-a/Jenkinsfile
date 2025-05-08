@@ -1,33 +1,45 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        DOCKER_IMAGE = "yourdockerhubusername/service-a" // Replace with your Docker Hub username and image name
+    }
+
     stages {
-        stage('Build') {
+        stage('Checkout') {
+            steps {
+                // Checking out the repository which contains the Dockerfile
+                checkout scm
+            }
+        }
+
+        stage('Build Image') {
             steps {
                 script {
-                    // Build Docker Image
-                    def imageName = "service-a"
-                    docker.build(imageName)
+                    // Build the Docker image
+                    docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", "./service-a")
                 }
             }
         }
 
-        stage('Test') {
+        stage('Login to DockerHub') {
             steps {
                 script {
-                    // Here you can add any testing commands
-                    echo 'Running tests...'
+                    // Log in to Docker Hub
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
+                        echo 'Login successful'
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Push Image') {
             steps {
                 script {
-                    // Deploy the container
-                    def imageName = "service-a"
-                    docker.image(imageName).withRun('-p 5000:5000') { c ->
-                        sh 'sleep 15' // Wait for the container to start
+                    // Push the Docker image
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
+                        sh "docker push ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
                     }
                 }
             }
